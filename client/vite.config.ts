@@ -137,11 +137,11 @@ export default defineConfig(({ command }) => ({
       },
       includeAssets: [],
       manifest: {
-        name: 'LibreChat',
-        short_name: 'LibreChat',
+        name: 'Nexus AI',
+        short_name: 'Nexus AI',
         display: 'standalone',
-        background_color: '#000000',
-        theme_color: '#009688',
+        background_color: '#070B3D',
+        theme_color: '#000C60',
         icons: [
           {
             src: 'assets/favicon-32x32.png',
