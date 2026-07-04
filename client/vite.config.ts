@@ -401,6 +401,10 @@ export default defineConfig(({ command }) => ({
       $fonts: path.resolve(__dirname, 'public/fonts'),
       'micromark-extension-math': 'micromark-extension-llm-math',
     },
+    dedupe: ['react', 'react-dom', 'jotai'],
+  },
+  optimizeDeps: {
+    include: ['vite-plugin-node-polyfills/shims/buffer'],
   },
 }));
 
