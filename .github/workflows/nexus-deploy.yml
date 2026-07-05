@@ -20,7 +20,8 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.VM_APP_PATH }}
+            git remote set-url origin https://github.com/verbosec/nexuschat.git
             git fetch origin
-            git checkout nexus-brand
+            git checkout nexus-brand || git checkout -b nexus-brand origin/nexus-brand
             git pull --ff-only origin nexus-brand
             docker compose up -d --build
