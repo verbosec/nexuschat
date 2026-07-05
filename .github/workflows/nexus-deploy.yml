@@ -1,0 +1,26 @@
+name: Deploy Nexus AI to Azure VM
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.VM_APP_PATH }}
+            git fetch origin
+            git checkout nexus-brand
+            git pull --ff-only origin nexus-brand
+            docker compose up -d --build
