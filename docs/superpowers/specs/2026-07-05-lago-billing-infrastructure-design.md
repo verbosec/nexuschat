@@ -11,6 +11,7 @@ This spec covers **only the billing infrastructure layer**: the plumbing connect
 **In scope for v1:**
 - Individual plans only: Free, Premium, Ultimate.
 - Customer/subscription provisioning, usage reporting, entitlement sync, checkout.
+- Credit top-ups (pricing doc Section 9's Starter/Growth/Power one-time purchases), via Lago's **Add-on** primitive.
 
 **Explicitly out of scope for v1:**
 - Teams/Business seat-based billing (org membership, seat add/remove, pooled credits). Deferred to a follow-up phase once individual billing is proven. The design should not preclude adding this later, but no org-aware code is being built now.
@@ -37,6 +38,7 @@ This spec covers **only the billing infrastructure layer**: the plumbing connect
 | Lago checkout mechanism | **Hosted Stripe Checkout URL issued by Lago** | Confirmed against Lago's API — LibreChat requests a checkout session from Lago and redirects the browser to the URL Lago returns; no Stripe Elements form is built in this codebase. |
 | V1 org/seat scope | **Individual plans only** | Teams/Business seat-based billing (org membership, seat sync, pooled credits) is meaningfully more complex and deferred to a follow-up phase. |
 | Lago customer provisioning trigger | **Only on a billing action (upgrade/checkout)** | Free-tier users have no Lago customer at all and are served entirely by LibreChat's existing local defaults. A Lago customer + subscription is created the first time a user actually upgrades. Entitlement/enforcement code must have a clean fallback path for users with no Lago customer yet. |
+| Lago primitive for credit top-ups | **Add-ons**, not Wallets | Top-ups are one-time, non-recurring purchases (buy $10 → get 1,000 extra credits) — they don't fit Entitlements (static plan config) either. Lago's Add-on primitive is built for exactly this: a one-off charge applied to a customer. The resulting credit is still added directly to the local `Balance.tokenCredits` (see Flow 3) rather than tracked as a Lago wallet balance, keeping local `Balance` the single enforcement source as with regular plan allowances. |
 
 ## Architecture Overview
 
@@ -47,9 +49,10 @@ This spec covers **only the billing infrastructure layer**: the plumbing connect
                     └──────┬──────┘
                            │
               ┌────────────┼─────────────────┐
-              │ (1) upgrade action            │ (2) async usage event
-              │ creates customer+subscription │    (fire-and-forget,
-              ▼                                ▼    never blocks request)
+              │ (1) billing action             │ (2) async usage event
+              │ (upgrade or top-up) creates     │    (fire-and-forget,
+              │ customer+subscription/add-on   │    never blocks request)
+              ▼                                ▼
         ┌───────────────────────────────────────────┐
         │                    Lago                     │
         │  customers · plans · entitlements ·         │
@@ -62,12 +65,12 @@ This spec covers **only the billing infrastructure layer**: the plumbing connect
                        │ Stripe │  (payment collection only)
                        └────────┘
                            │
-              (3) Lago webhook: subscription/invoice/payment events
+        (3) Lago webhook: subscription/invoice/add-on/payment events
                            ▼
                     ┌─────────────┐
-                    │  LibreChat  │  updates local balance config
-                    │  webhook    │  to match new plan
-                    │  receiver   │
+                    │  LibreChat  │  updates local balance config to
+                    │  webhook    │  match new plan, or credits a
+                    │  receiver   │  top-up directly onto Balance
                     └─────────────┘
 ```
 
@@ -96,10 +99,15 @@ Durability without a message queue: add `lagoSyncedAt` / `lagoSyncError` fields 
 Existing `checkBalance` / `Balance` / `Transaction` system keeps working exactly as today. Free-tier users are entirely unaffected — no Lago customer, no new code path.
 
 ### f. Checkout & billing UI — extends `client/src/components/Nav/Settings/registry.tsx` (Account → Billing section)
-New entries: plan picker, checkout trigger (redirects to Lago's hosted Stripe Checkout URL), current-plan/usage summary, invoice history. Backend surface:
+New entries: plan picker, checkout trigger (redirects to Lago's hosted Stripe Checkout URL), current-plan/usage summary, invoice history, and a top-up picker (Starter/Growth/Power). Backend surface:
 - `GET /api/billing/plans` — proxies Lago's plan definitions (Lago stays the single source of truth for plan copy/pricing, avoiding drift from a hardcoded frontend list).
-- `POST /api/billing/checkout` — ensures a Lago customer exists, requests a hosted checkout session, returns the redirect URL.
+- `POST /api/billing/checkout` — ensures a Lago customer exists, requests a hosted checkout session for a subscription plan, returns the redirect URL.
 - `GET /api/billing/subscription` — current user's plan/entitlement state, for the UI to display and to poll briefly after redirect-back while waiting for the webhook to land.
+- `GET /api/billing/topups` — proxies Lago's configured Add-on definitions (Starter/Growth/Power), same single-source-of-truth reasoning as plans.
+- `POST /api/billing/topups/checkout` — ensures a Lago customer exists, applies the chosen Add-on to request a hosted checkout session for the one-time charge, returns the redirect URL.
+
+### g. Credit top-up (Add-on) purchase — `packages/api/src/billing/topups.ts`
+Reuses the same checkout mechanism as a plan upgrade, but requests a hosted checkout session for a one-time Lago **Add-on** charge instead of a subscription. On payment confirmation (see Flow 3), credits the converted amount directly onto local `Balance.tokenCredits` — a one-off addition, independent of and on top of the plan's periodic allowance, with no reset/expiry logic needed (unless a future decision adds top-up expiry).
 
 ## Key Data Flows
 
@@ -117,7 +125,15 @@ New entries: plan picker, checkout trigger (redirects to Lago's hosted Stripe Ch
 3. Immediately after: fire-and-forget send of the usage event to Lago, tagged with the Zitadel user ID. Success marks the `Transaction` synced; failure is logged and left for the sweep job.
 4. Response returns to the user with zero added latency from any billing plumbing.
 
-### Flow 3 — Plan change / cancellation / payment failure
+### Flow 3 — Credit top-up purchase
+1. Frontend: user out of credits clicks "Buy more" → picks a tier (e.g. Growth, $20/2,500 credits) → `POST /api/billing/topups/checkout { addOnCode: 'growth' }`.
+2. Backend: `ensureLagoCustomer(zitadelUserId)` (a Free-tier user can hit this path without ever having subscribed to a paid plan), then requests a hosted checkout session from Lago for that Add-on.
+3. Backend returns the hosted Stripe Checkout URL; frontend redirects the browser there.
+4. User pays → Stripe confirms to Lago → Lago fires a one-time-charge/invoice-paid webhook for the Add-on.
+5. Webhook receiver identifies the Add-on's credit value, converts it via the credits-unit conversion rate, and directly increments the user's local `Balance.tokenCredits` — immediately, independent of the plan's periodic allowance/refill cycle.
+6. User is redirected back to LibreChat; frontend re-fetches balance, same brief "activating..." pattern as Flow 1 while waiting for the webhook.
+
+### Flow 4 — Plan change / cancellation / payment failure
 1. Any subscription-state change in Lago fires a webhook.
 2. Webhook receiver verifies signature, looks up the local user by the Lago customer's `external_id` (Zitadel user ID), updates local `Balance` config to match.
 3. Cancellation/payment-failure grace-period handling: see Open Questions.
