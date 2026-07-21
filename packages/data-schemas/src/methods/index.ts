@@ -33,6 +33,7 @@ import { createShareMethods, type ShareMethods } from './share';
 import { createActionMethods, type ActionMethods } from './action';
 import { createAssistantMethods, type AssistantMethods } from './assistant';
 import { createBannerMethods, type BannerMethods } from './banner';
+import { createBillingUsageEventMethods, type BillingUsageEventMethods } from './billingUsageEvent';
 import { createToolCallMethods, type ToolCallMethods } from './toolCall';
 import { createCategoriesMethods, type CategoriesMethods } from './categories';
 import { createPresetMethods, type PresetMethods } from './preset';
@@ -131,6 +132,7 @@ export type AllMethods = UserMethods &
   ActionMethods &
   AssistantMethods &
   BannerMethods &
+  BillingUsageEventMethods &
   ToolCallMethods &
   CategoriesMethods &
   PresetMethods &
@@ -259,6 +261,7 @@ export function createMethods(
     ...actionMethods,
     ...createAssistantMethods(mongoose),
     ...createBannerMethods(mongoose),
+    ...createBillingUsageEventMethods(mongoose),
     ...createToolCallMethods(mongoose),
     ...createCategoriesMethods(mongoose),
     ...createPresetMethods(mongoose),
@@ -303,6 +306,7 @@ export type {
   ActionMethods,
   AssistantMethods,
   BannerMethods,
+  BillingUsageEventMethods,
   ToolCallMethods,
   CategoriesMethods,
   PresetMethods,

@@ -27,6 +27,9 @@ const {
   preAuthTenantMiddleware,
   setupGracefulShutdown,
   updateInterfacePermissions,
+  getBillingConfig,
+  createLagoClient,
+  startBillingEventSweep,
 } = require('@librechat/api');
 const { connectDb, indexSync } = require('~/db');
 const {
@@ -34,6 +37,10 @@ const {
   sweepOrphanedPreviews,
   getRoleByName,
   seedDatabase,
+  findUser,
+  findUnsyncedBillingUsageEvents,
+  markBillingUsageEventSynced,
+  markBillingUsageEventSyncFailed,
 } = require('~/models');
 const initializeOAuthReconnectManager = require('./services/initializeOAuthReconnectManager');
 const { capabilityContextMiddleware } = require('./middleware/roles/capabilities');
@@ -73,6 +80,28 @@ const rejectChatStartsUntilReady = (req, res, next) => {
   return res.status(503).json({
     code: SERVER_NOT_READY_CODE,
     error: 'Server is still starting. Please retry shortly.',
+  });
+};
+
+/**
+ * Starts the periodic resync of un-synced billing usage events. No-ops when
+ * billing isn't configured for this deployment (no LAGO_* env vars) —
+ * billing is an optional feature and must never prevent the server from
+ * starting.
+ */
+const startBillingSweep = () => {
+  const billingConfig = getBillingConfig();
+  if (!billingConfig) {
+    return;
+  }
+
+  startBillingEventSweep(undefined, {
+    lagoClient: createLagoClient(billingConfig),
+    findUser,
+    findUnsyncedBillingUsageEvents,
+    markBillingUsageEventSynced,
+    markBillingUsageEventSyncFailed,
+    runAsSystem,
   });
 };
 
@@ -124,6 +153,7 @@ const startServer = async () => {
   await initializeDeploymentSkills({ projectRoot: path.resolve(__dirname, '../..') });
   initializeGitHubSkillSync(appConfig);
   startExpiredFileSweep({ appConfig, loadAppConfig: getAppConfig });
+  startBillingSweep();
   await runAsSystem(async () => {
     await performStartupChecks(appConfig);
     await updateInterfacePermissions({ appConfig, getRoleByName, updateAccessPermissions });
@@ -174,7 +204,14 @@ const startServer = async () => {
   /* Middleware */
   app.use(metricsMiddleware);
   app.use(noIndex);
-  app.use(express.json({ limit: '3mb' }));
+  app.use(
+    express.json({
+      limit: '3mb',
+      verify: (req, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   app.use(express.urlencoded({ extended: true, limit: '3mb' }));
   app.use(handleJsonParseError);
 
@@ -258,6 +295,8 @@ const startServer = async () => {
   app.use('/api/categories', routes.categories);
   app.use('/api/endpoints', routes.endpoints);
   app.use('/api/balance', routes.balance);
+  app.use('/api/billing/webhooks', routes.billingWebhooks);
+  app.use('/api/billing', routes.billing);
   app.use('/api/models', routes.models);
   app.use('/api/config', preAuthTenantMiddleware, optionalJwtAuth, routes.config);
   app.use('/api/assistants', routes.assistants);

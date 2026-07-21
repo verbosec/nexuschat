@@ -20,6 +20,7 @@ import dashboardRoutes from './Dashboard';
 import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
 import Search from './Search';
+import Plans from './Plans';
 import Root from './Root';
 
 const AuthLayout = () => (
@@ -185,6 +186,10 @@ export const router = createBrowserRouter(
                   <AgentMarketplace />
                 </MarketplaceProvider>
               ),
+            },
+            {
+              path: 'plans/:planCode?',
+              element: <Plans />,
             },
           ],
         },

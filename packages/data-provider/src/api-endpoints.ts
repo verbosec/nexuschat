@@ -45,6 +45,14 @@ export const user = () => `${BASE_URL}/api/user`;
 
 export const balance = () => `${BASE_URL}/api/balance`;
 
+export const billingPlans = () => `${BASE_URL}/api/billing/plans`;
+export const billingTopups = () => `${BASE_URL}/api/billing/topups`;
+export const billingSubscription = () => `${BASE_URL}/api/billing/subscription`;
+
+export const billingInvoices = () => `${BASE_URL}/api/billing/invoices`;
+export const billingCheckout = () => `${BASE_URL}/api/billing/checkout`;
+export const billingTopupCheckout = () => `${BASE_URL}/api/billing/topups/checkout`;
+
 export const userPlugins = () => `${BASE_URL}/api/user/plugins`;
 
 export const deleteUser = () => `${BASE_URL}/api/user/delete`;

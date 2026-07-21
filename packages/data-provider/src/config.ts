@@ -2564,6 +2564,10 @@ export enum SettingsTabValues {
    */
   ACCOUNT = 'account',
   /**
+   * Tab for Billing Settings
+   */
+  BILLING = 'billing',
+  /**
    * Chat input commands
    */
   COMMANDS = 'commands',

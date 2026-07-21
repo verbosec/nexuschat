@@ -30,7 +30,14 @@ import ChatDirection from '../SettingsTabs/Chat/ChatDirection';
 import { DeleteCache } from '../SettingsTabs/Data/DeleteCache';
 import { RevokeKeys } from '../SettingsTabs/Data/RevokeKeys';
 import { ClearChats } from '../SettingsTabs/Data/ClearChats';
-import { TokenCredits, AutoRefill } from './BillingControls';
+import {
+  TokenCredits,
+  AutoRefill,
+  Plans,
+  Topups,
+  SubscriptionStatus,
+  Invoices,
+} from './BillingControls';
 import SharedLinks from '../SettingsTabs/Data/SharedLinks';
 import { showThinkingAtom } from '~/store/showThinking';
 import ProviderKeys from '../SettingsTabs/ProviderKeys';
@@ -41,7 +48,7 @@ import MemoryToggle from './MemoryToggle';
 import { TTSEndpoints } from '~/common';
 import store from '~/store';
 
-const { GENERAL, CHAT, SPEECH, DATA, ACCOUNT, ABOUT } = SettingsTabValues;
+const { GENERAL, CHAT, SPEECH, DATA, BILLING, ACCOUNT, ABOUT } = SettingsTabValues;
 
 export const registry: SettingEntry[] = [
   // General · Appearance
@@ -507,6 +514,52 @@ export const registry: SettingEntry[] = [
     Component: ClearChats,
   },
 
+  // Billing
+  {
+    id: 'tokenCredits',
+    tab: BILLING,
+    section: 'billing',
+    labelKey: 'com_ui_settings_label_credits',
+    show: (ctx) => ctx.balanceEnabled,
+    Component: TokenCredits,
+  },
+  {
+    id: 'autoRefill',
+    tab: BILLING,
+    section: 'billing',
+    labelKey: 'com_ui_settings_label_auto_refill',
+    show: (ctx) => ctx.balanceEnabled,
+    Component: AutoRefill,
+  },
+  {
+    id: 'subscriptionStatus',
+    tab: BILLING,
+    section: 'billing',
+    labelKey: 'com_ui_settings_label_subscription_status',
+    Component: SubscriptionStatus,
+  },
+  {
+    id: 'plans',
+    tab: BILLING,
+    section: 'billing',
+    labelKey: 'com_ui_settings_label_plans',
+    Component: Plans,
+  },
+  {
+    id: 'topups',
+    tab: BILLING,
+    section: 'billing',
+    labelKey: 'com_ui_settings_label_topups',
+    Component: Topups,
+  },
+  {
+    id: 'invoices',
+    tab: BILLING,
+    section: 'billing',
+    labelKey: 'com_ui_settings_label_invoices',
+    Component: Invoices,
+  },
+
   // Account · Profile
   {
     id: 'avatar',
@@ -531,23 +584,6 @@ export const registry: SettingEntry[] = [
     labelKey: 'com_ui_settings_label_backup_codes',
     show: (ctx) => ctx.isLocalProvider && ctx.twoFactorEnabled,
     Component: BackupCodesItem,
-  },
-  // Account · Billing
-  {
-    id: 'tokenCredits',
-    tab: ACCOUNT,
-    section: 'billing',
-    labelKey: 'com_ui_settings_label_credits',
-    show: (ctx) => ctx.balanceEnabled,
-    Component: TokenCredits,
-  },
-  {
-    id: 'autoRefill',
-    tab: ACCOUNT,
-    section: 'billing',
-    labelKey: 'com_ui_settings_label_auto_refill',
-    show: (ctx) => ctx.balanceEnabled,
-    Component: AutoRefill,
   },
   // Account · Danger zone
   {

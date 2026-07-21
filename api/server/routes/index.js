@@ -1,4 +1,6 @@
 const accessPermissions = require('./accessPermissions');
+const billing = require('./billing');
+const billingWebhooks = require('./billing/webhooks');
 const assistants = require('./assistants');
 const categories = require('./categories');
 const adminAuth = require('./admin/auth');
@@ -38,6 +40,8 @@ const mcp = require('./mcp');
 const rum = require('./rum');
 
 module.exports = {
+  billing,
+  billingWebhooks,
   rum,
   mcp,
   auth,

@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import { MessageSquare, Info } from 'lucide-react';
+import { MessageSquare, CreditCard, Info } from 'lucide-react';
 import { SettingsTabValues } from 'librechat-data-provider';
 import { GearIcon, DataIcon, UserIcon, SpeechIcon } from '@librechat/client';
 import type { ComponentType, ReactNode } from 'react';
@@ -10,6 +10,7 @@ export type SettingsTab =
   | SettingsTabValues.CHAT
   | SettingsTabValues.SPEECH
   | SettingsTabValues.DATA
+  | SettingsTabValues.BILLING
   | SettingsTabValues.ACCOUNT
   | SettingsTabValues.ABOUT;
 
@@ -116,13 +117,18 @@ export const TABS: TabMeta[] = [
     ],
   },
   {
+    id: SettingsTabValues.BILLING,
+    labelKey: 'com_nav_setting_billing',
+    icon: createElement(CreditCard, { className: 'icon-sm', 'aria-hidden': true }),
+    sections: [{ id: 'billing', labelKey: 'com_ui_settings_section_billing' }],
+  },
+  {
     id: SettingsTabValues.ACCOUNT,
     labelKey: 'com_nav_setting_account',
     icon: createElement(UserIcon),
     sections: [
       { id: 'profile', labelKey: 'com_ui_settings_section_profile' },
       { id: 'security', labelKey: 'com_ui_settings_section_security' },
-      { id: 'billing', labelKey: 'com_ui_settings_section_billing' },
       { id: 'danger', labelKey: 'com_ui_settings_section_danger_zone', danger: true },
     ],
   },

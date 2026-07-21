@@ -23,6 +23,9 @@ const {
   recordCollectedUsage,
   sendEvent,
   computeUsageCostUSD,
+  getBillingConfig,
+  createLagoClient,
+  createUsageEventEmitter,
   aggregateEmittedUsage,
   resolveAgentTokenConfig,
   buildPersistedContextUsage,
@@ -98,6 +101,35 @@ const db = require('~/models');
 const loadAgent = (params) => loadAgentFn(params, { getAgent: db.getAgent, getMCPServerTools });
 
 const MEMORY_INPUT_CHARS_PER_TOKEN = 8;
+
+/**
+ * Lazily builds a singleton usage-event emitter wired to real Lago/Mongo
+ * dependencies. Returns null when billing isn't configured for this
+ * deployment (no LAGO_* env vars) — billing is an optional feature and must
+ * never prevent the server from starting or a chat request from completing.
+ * @returns {import('@librechat/api').UsageEventEmitter | null}
+ */
+let cachedUsageEventEmitter;
+function getUsageEventEmitter() {
+  if (cachedUsageEventEmitter !== undefined) {
+    return cachedUsageEventEmitter;
+  }
+
+  const billingConfig = getBillingConfig();
+  if (!billingConfig) {
+    cachedUsageEventEmitter = null;
+    return cachedUsageEventEmitter;
+  }
+
+  cachedUsageEventEmitter = createUsageEventEmitter({
+    lagoClient: createLagoClient(billingConfig),
+    findUser: db.findUser,
+    createBillingUsageEvent: db.createBillingUsageEvent,
+    markBillingUsageEventSynced: db.markBillingUsageEventSynced,
+    markBillingUsageEventSyncFailed: db.markBillingUsageEventSyncFailed,
+  });
+  return cachedUsageEventEmitter;
+}
 
 class AgentClient extends BaseClient {
   constructor(options = {}) {
@@ -1071,6 +1103,49 @@ class AgentClient extends BaseClient {
 
     if (result) {
       this.usage = result;
+    }
+
+    this.reportUsageToBilling({ model, collectedUsage });
+  }
+
+  /**
+   * Reports this request's total cost to the billing system (Lago), for
+   * cross-product invoicing/reporting only — never blocks or throws, since
+   * request-time enforcement is handled entirely by the local balance check
+   * above, not by this call.
+   * @param {Object} params
+   * @param {string} [params.model]
+   * @param {UsageMetadata[]} params.collectedUsage
+   */
+  reportUsageToBilling({ model, collectedUsage }) {
+    try {
+      const emitter = getUsageEventEmitter();
+      const userId = this.user ?? this.options.req.user?.id;
+      if (!emitter || !userId || !collectedUsage?.length) {
+        return;
+      }
+
+      const pricing = { getMultiplier: db.getMultiplier, getCacheMultiplier: db.getCacheMultiplier };
+      const costUSD = collectedUsage
+        .filter(Boolean)
+        .reduce(
+          (sum, usage) => sum + computeUsageCostUSD(usage, pricing, this.options.endpointTokenConfig),
+          0,
+        );
+
+      emitter
+        .emitUsageEvent({
+          localUserId: userId,
+          conversationId: this.conversationId,
+          messageId: this.responseMessageId,
+          model: model ?? this.model ?? this.options.agent.model_parameters.model,
+          costUSD,
+        })
+        .catch((err) => {
+          logger.error('[AgentClient] reportUsageToBilling failed', err);
+        });
+    } catch (err) {
+      logger.error('[AgentClient] reportUsageToBilling failed to initialize billing', err);
     }
   }
 

@@ -19,6 +19,7 @@ import { createAclEntryModel } from './aclEntry';
 import { createAuditLogModel } from './auditLog';
 import { createSessionModel } from './session';
 import { createBalanceModel } from './balance';
+import { createBillingUsageEventModel } from './billingUsageEvent';
 import { createMessageModel } from './message';
 import { createActionModel } from './action';
 import { createBannerModel } from './banner';
@@ -43,6 +44,7 @@ export function createModels(mongoose: typeof import('mongoose')): {
   Token: ReturnType<typeof createTokenModel>;
   Session: ReturnType<typeof createSessionModel>;
   Balance: ReturnType<typeof createBalanceModel>;
+  BillingUsageEvent: ReturnType<typeof createBillingUsageEventModel>;
   Conversation: ReturnType<typeof createConversationModel>;
   ChatProject: ReturnType<typeof createChatProjectModel>;
   Message: ReturnType<typeof createMessageModel>;
@@ -81,6 +83,7 @@ export function createModels(mongoose: typeof import('mongoose')): {
     Token: createTokenModel(mongoose),
     Session: createSessionModel(mongoose),
     Balance: createBalanceModel(mongoose),
+    BillingUsageEvent: createBillingUsageEventModel(mongoose),
     Conversation: createConversationModel(mongoose),
     ChatProject: createChatProjectModel(mongoose),
     Message: createMessageModel(mongoose),

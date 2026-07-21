@@ -1,4 +1,5 @@
 import { useState, memo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 import * as Menu from '@ariakit/react/menu';
 import { GearIcon, DropdownMenuSeparator, Avatar } from '@librechat/client';
@@ -6,6 +7,7 @@ import {
   Archive,
   ChevronRight,
   CircleHelp,
+  CreditCard,
   FileText,
   Keyboard,
   LifeBuoy,
@@ -94,6 +96,7 @@ function HelpSubmenu({
 
 function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
   const localize = useLocalize();
+  const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthContext();
   const { data: startupConfig } = useGetStartupConfig();
   const balanceQuery = useGetUserBalance({
@@ -167,6 +170,10 @@ function AccountSettings({ collapsed = false }: { collapsed?: boolean }) {
         <Menu.MenuItem onClick={() => setShowArchived(true)} className="select-item text-sm">
           <Archive className="icon-md" aria-hidden="true" />
           {localize('com_nav_archived_chats')}
+        </Menu.MenuItem>
+        <Menu.MenuItem onClick={() => navigate('/plans')} className="select-item text-sm">
+          <CreditCard className="icon-md" aria-hidden="true" />
+          {localize('com_nav_billing')}
         </Menu.MenuItem>
         <Menu.MenuItem
           onClick={() => setShowSettings(true)}

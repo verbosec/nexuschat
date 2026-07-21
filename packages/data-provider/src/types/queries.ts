@@ -243,3 +243,43 @@ export type GraphTokenResponse = {
   expires_in: number;
   scope: string;
 };
+
+/* Billing */
+export type TBillingPlan = {
+  code: string;
+  name: string;
+  amountCents: number;
+  amountCurrency: string;
+  tier?: string;
+  interval?: 'monthly' | 'annual';
+  tokenCredits?: number;
+  features?: string[];
+};
+
+export type TBillingTopup = {
+  code: string;
+  name: string;
+  amountCents: number;
+  amountCurrency: string;
+  tokenCredits?: number;
+};
+
+export type TBillingSubscription = {
+  plan: string;
+  interval: 'monthly' | 'annual' | null;
+  renewalDate: string | null;
+};
+
+export type TBillingInvoice = {
+  id: string;
+  issuingDate: string;
+  totalCents: number;
+  currency: string;
+  status: string;
+  paymentStatus: string;
+  fileUrl: string;
+};
+
+export type TBillingCheckoutResponse = {
+  url: string;
+};

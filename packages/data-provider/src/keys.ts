@@ -85,6 +85,11 @@ export enum QueryKeys {
   skillStates = 'skillStates',
   /* General user favorites */
   favorites = 'favorites',
+  /* Billing */
+  billingPlans = 'billingPlans',
+  billingTopups = 'billingTopups',
+  billingSubscription = 'billingSubscription',
+  billingInvoices = 'billingInvoices',
 }
 
 // Dynamic query keys that require parameters
@@ -128,4 +133,8 @@ export enum MutationKeys {
   deleteSkillNode = 'deleteSkillNode',
   updateSkillNodeContent = 'updateSkillNodeContent',
   convoPin = 'convoPin',
+  /* Billing */
+  billingCheckout = 'billingCheckout',
+  billingTopupCheckout = 'billingTopupCheckout',
+  billingCancelSubscription = 'billingCancelSubscription',
 }

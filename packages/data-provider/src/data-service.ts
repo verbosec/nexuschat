@@ -153,6 +153,34 @@ export function getUserBalance(): Promise<t.TBalanceResponse> {
   return request.get(endpoints.balance());
 }
 
+export function getBillingPlans(): Promise<q.TBillingPlan[]> {
+  return request.get(endpoints.billingPlans());
+}
+
+export function getBillingTopups(): Promise<q.TBillingTopup[]> {
+  return request.get(endpoints.billingTopups());
+}
+
+export function getBillingSubscription(): Promise<q.TBillingSubscription> {
+  return request.get(endpoints.billingSubscription());
+}
+
+export function postBillingCheckout(planCode: string): Promise<q.TBillingCheckoutResponse> {
+  return request.post(endpoints.billingCheckout(), { planCode });
+}
+
+export function postBillingTopupCheckout(addOnCode: string): Promise<q.TBillingCheckoutResponse> {
+  return request.post(endpoints.billingTopupCheckout(), { addOnCode });
+}
+
+export function getBillingInvoices(): Promise<q.TBillingInvoice[]> {
+  return request.get(endpoints.billingInvoices());
+}
+
+export function deleteBillingSubscription(): Promise<{ success: boolean }> {
+  return request.delete(endpoints.billingSubscription());
+}
+
 export const updateTokenCount = (text: string) => {
   return request.post(endpoints.tokenizer(), { arg: text });
 };
