@@ -14,6 +14,7 @@ import type { TMessageProps } from '~/common';
 import type { TMessageChatContext } from '~/common/types';
 import { useAssistantsMapContext, useAgentsMapContext } from '~/Providers';
 import useCopyToClipboard from './useCopyToClipboard';
+import { useGetStartupConfig } from '~/data-provider';
 import { useAuthContext } from '~/hooks/AuthContext';
 import { useGetAddedConvo } from '~/hooks/Chat';
 import { useLocalize } from '~/hooks';
@@ -36,6 +37,7 @@ export type TMessageActions = Pick<
 export default function useMessageActions(props: TMessageActions) {
   const localize = useLocalize();
   const { user } = useAuthContext();
+  const { data: startupConfig } = useGetStartupConfig();
   const UsernameDisplay = useRecoilValue<boolean>(store.UsernameDisplay);
   const { message, currentEditId, setCurrentEditId, searchResults, chatContext } = props;
 
@@ -131,9 +133,9 @@ export default function useMessageActions(props: TMessageActions) {
     } else if (assistant) {
       return assistant.name ?? 'Assistant';
     } else {
-      return message?.sender;
+      return startupConfig?.appTitle ?? 'LibreChat';
     }
-  }, [message, agent, assistant, UsernameDisplay, user, localize]);
+  }, [message, agent, assistant, UsernameDisplay, user, localize, startupConfig?.appTitle]);
 
   const feedbackMutation = useUpdateFeedbackMutation(
     conversation?.conversationId || '',

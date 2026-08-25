@@ -7,7 +7,10 @@ jest.mock('librechat-data-provider', () => ({
   getEndpointField: jest.fn(),
 }));
 jest.mock('~/components/Endpoints/ConvoIconURL', () => jest.fn());
-jest.mock('~/data-provider', () => ({ useGetEndpointsQuery: jest.fn(() => ({ data: {} })) }));
+jest.mock('~/data-provider', () => ({
+  useGetEndpointsQuery: jest.fn(() => ({ data: {} })),
+  useGetStartupConfig: jest.fn(() => ({ data: {} })),
+}));
 jest.mock('~/utils', () => ({ getIconEndpoint: jest.fn(), logger: { log: jest.fn() } }));
 jest.mock('~/components/Endpoints/Icon', () => jest.fn());
 
@@ -137,16 +140,17 @@ describe('MessageIcon arePropsEqual', () => {
     expect(arePropsEqual({ iconData: baseIconData }, { iconData: baseIconData })).toBe(true);
   });
 
-  // avatarURL and display strings both remain '' in both states — nothing renders differently,
-  // so suppressing the re-render is correct even though the agent prop went from undefined to defined.
-  it('returns true when agent transitions from undefined to object with undefined display fields', () => {
+  // Presence of `agent` itself is load-bearing: MessageIcon renders a brand icon for plain
+  // model messages only when `agent` is absent, so a defined-vs-undefined transition must
+  // trigger a re-render even when the agent's display fields are both blank.
+  it('returns false when agent transitions from undefined to object with undefined display fields', () => {
     const agentNoFields = makeAgent({ name: undefined, avatar: undefined });
     expect(
       arePropsEqual(
         { iconData: baseIconData, agent: undefined },
         { iconData: baseIconData, agent: agentNoFields },
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('returns false when agent transitions from defined to undefined', () => {

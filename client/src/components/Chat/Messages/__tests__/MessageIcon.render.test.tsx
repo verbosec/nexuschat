@@ -10,6 +10,7 @@ jest.mock('librechat-data-provider', () => ({
 }));
 jest.mock('~/data-provider', () => ({
   useGetEndpointsQuery: jest.fn(() => ({ data: {} })),
+  useGetStartupConfig: jest.fn(() => ({ data: {} })),
 }));
 jest.mock('~/utils', () => ({
   getIconEndpoint: jest.fn(() => 'agents'),
@@ -62,13 +63,14 @@ describe('MessageIcon render cycles', () => {
     expect(iconRenderCount.current).toBe(1);
   });
 
-  it('renders same-origin absolute model spec icon URLs directly', () => {
+  it('renders same-origin absolute icon URLs directly for agent messages', () => {
     render(
       <MessageIcon
         iconData={{
           ...baseIconData,
           iconURL: '/assets/clickhouse-logo.svg',
         }}
+        agent={makeAgent()}
       />,
     );
 
@@ -76,6 +78,22 @@ describe('MessageIcon render cycles', () => {
       'data-icon-url',
       '/assets/clickhouse-logo.svg',
     );
+  });
+
+  it('renders the brand icon for a plain model message, ignoring any custom iconURL', () => {
+    render(
+      <MessageIcon
+        iconData={{
+          ...baseIconData,
+          endpoint: EModelEndpoint.openAI,
+          iconURL: '/assets/clickhouse-logo.svg',
+        }}
+      />,
+    );
+
+    expect(screen.queryByTestId('convo-icon-url')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('icon')).not.toBeInTheDocument();
+    expect(screen.getByRole('img')).toHaveAttribute('src', '/assets/icon-192x192.png');
   });
 
   it('does not re-render when parent re-renders with same field values but new object references', () => {

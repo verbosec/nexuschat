@@ -3,7 +3,6 @@ import debounce from 'lodash/debounce';
 import { useToastContext } from '@librechat/client';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import { EToolResources, isAssistantsEndpoint } from 'librechat-data-provider';
-import type { TEndpointOption } from 'librechat-data-provider';
 import type { KeyboardEvent } from 'react';
 import {
   parseBinding,
@@ -22,7 +21,6 @@ import { useAssistantsMapContext } from '~/Providers/AssistantsMapContext';
 import { useLatestMessage } from '~/hooks/Messages/useLatestMessage';
 import useFileUploadRouter from '~/hooks/Files/useFileUploadRouter';
 import { useAgentsMapContext } from '~/Providers/AgentsMapContext';
-import useGetSender from '~/hooks/Conversations/useGetSender';
 import useUploadOptions from '~/hooks/Files/useUploadOptions';
 import { useInteractionHealthCheck } from '~/data-provider';
 import { useChatContext } from '~/Providers/ChatContext';
@@ -47,7 +45,6 @@ export default function useTextarea({
   placeholder?: string;
 }) {
   const localize = useLocalize();
-  const getSender = useGetSender();
   const isComposing = useRef(false);
   const agentsMap = useAgentsMapContext();
   const { showToast } = useToastContext();
@@ -130,11 +127,11 @@ export default function useTextarea({
         return placeholder;
       }
 
-      const sender =
-        isAssistant || isAgent
-          ? getEntityName({ name: entityName, isAgent, localize })
-          : getSender(conversation as TEndpointOption);
+      if (!isAssistant && !isAgent) {
+        return localize('com_ui_how_can_i_help');
+      }
 
+      const sender = getEntityName({ name: entityName, isAgent, localize });
       return `${localize('com_endpoint_message_new', {
         0: sender ? sender : localize('com_endpoint_ai'),
       })}`;
@@ -163,7 +160,6 @@ export default function useTextarea({
     isAgent,
     localize,
     disabled,
-    getSender,
     agentsMap,
     entityName,
     textAreaRef,

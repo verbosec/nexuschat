@@ -3,10 +3,13 @@ import { getEndpointField } from 'librechat-data-provider';
 import type { Assistant, Agent } from 'librechat-data-provider';
 import type { TMessageIcon } from '~/common';
 import ConvoIconURL from '~/components/Endpoints/ConvoIconURL';
-import { useGetEndpointsQuery } from '~/data-provider';
+import { useGetEndpointsQuery, useGetStartupConfig } from '~/data-provider';
 import { getIconEndpoint } from '~/utils';
 import { isImageURL } from '~/utils/icons';
 import Icon from '~/components/Endpoints/Icon';
+import useLocalize from '~/hooks/useLocalize';
+
+const BRAND_ICON_URL = '/assets/icon-192x192.png';
 
 type MessageIconProps = {
   iconData?: TMessageIcon;
@@ -26,6 +29,8 @@ export function arePropsEqual(prev: MessageIconProps, next: MessageIconProps): b
     [prev.iconData?.iconURL, next.iconData?.iconURL],
     [prev.iconData?.modelLabel, next.iconData?.modelLabel],
     [prev.iconData?.isCreatedByUser, next.iconData?.isCreatedByUser],
+    [Boolean(prev.agent), Boolean(next.agent)],
+    [Boolean(prev.assistant), Boolean(next.assistant)],
     [prev.agent?.name, next.agent?.name],
     [prev.agent?.avatar?.filepath, next.agent?.avatar?.filepath],
     [prev.assistant?.name, next.assistant?.name],
@@ -41,7 +46,9 @@ export function arePropsEqual(prev: MessageIconProps, next: MessageIconProps): b
 }
 
 const MessageIcon = memo(({ iconData, assistant, agent }: MessageIconProps) => {
+  const localize = useLocalize();
   const { data: endpointsConfig } = useGetEndpointsQuery();
+  const { data: startupConfig } = useGetStartupConfig();
 
   const agentName = agent?.name ?? '';
   const agentAvatar = agent?.avatar?.filepath ?? '';
@@ -64,6 +71,21 @@ const MessageIcon = memo(({ iconData, assistant, agent }: MessageIconProps) => {
     () => getEndpointField(endpointsConfig, endpoint, 'iconURL'),
     [endpointsConfig, endpoint],
   );
+
+  if (!assistant && !agent && iconData?.isCreatedByUser !== true) {
+    const brandName = startupConfig?.appTitle ?? 'LibreChat';
+    return (
+      <div className="relative flex h-6 w-6 items-center justify-center">
+        <div style={{ width: 28.8, height: 28.8 }} className="overflow-hidden rounded-full">
+          <img
+            className="h-full w-full object-cover"
+            src={BRAND_ICON_URL}
+            alt={localize('com_ui_logo', { 0: brandName })}
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (iconData?.isCreatedByUser !== true && isImageURL(iconURL)) {
     return (
