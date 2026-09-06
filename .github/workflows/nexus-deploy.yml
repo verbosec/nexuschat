@@ -19,9 +19,13 @@ jobs:
           port: ${{ secrets.VM_PORT || 22 }}
           script: |
             set -e
+            mkdir -p ${{ secrets.VM_APP_PATH }}
             cd ${{ secrets.VM_APP_PATH }}
-            git remote set-url origin https://github.com/verbosec/nexuschat.git
+            if [ ! -d .git ]; then
+              git init
+            fi
+            git remote set-url origin https://github.com/verbosec/nexuschat.git 2>/dev/null || git remote add origin https://github.com/verbosec/nexuschat.git
             git fetch origin
-            git checkout nexus-brand || git checkout -b nexus-brand origin/nexus-brand
+            git checkout nexus-brand 2>/dev/null || git checkout -b nexus-brand origin/nexus-brand
             git pull --ff-only origin nexus-brand
             docker compose up -d --build
