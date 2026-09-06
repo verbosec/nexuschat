@@ -1,4 +1,4 @@
-name: Deploy Nexus AI to Azure VM
+name: Deploy Nexus AI to Virtual Machine
 
 on:
   workflow_dispatch:
