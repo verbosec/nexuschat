@@ -17,6 +17,7 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           port: ${{ secrets.VM_PORT || 22 }}
+          command_timeout: 30m
           script: |
             set -e
             mkdir -p ${{ secrets.VM_APP_PATH }}
